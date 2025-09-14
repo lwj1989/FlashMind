@@ -74,6 +74,35 @@
         </div>
       </div>
 
+      <!-- 批量操作栏 -->
+      <div v-if="showBatchMode && selectedCards.length > 0" class="bg-white rounded-xl shadow mb-4">
+        <div class="bg-indigo-50 px-6 py-3 border-l-4 border-indigo-400">
+          <div class="flex items-center justify-between">
+            <span class="text-sm font-medium text-indigo-800">已选择 {{ selectedCards.length }} 张卡片</span>
+            <div class="flex space-x-3">
+              <button 
+                @click="showBatchMoveModal = true" 
+                class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm"
+              >
+                批量移动
+              </button>
+              <button 
+                @click="showBatchTagModal = true" 
+                class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors text-sm"
+              >
+                批量标签
+              </button>
+              <button 
+                @click="batchDeleteCards" 
+                class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm"
+              >
+                批量删除
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- 卡片列表表格 -->
       <div class="bg-white rounded-xl shadow overflow-hidden">
         <div class="overflow-x-auto">
@@ -161,19 +190,6 @@
               </tr>
             </tbody>
           </table>
-        </div>
-
-        <!-- 批量操作栏 -->
-        <div v-if="showBatchMode && selectedCards.length > 0" class="bg-gray-50 px-6 py-3 border-t border-gray-200">
-          <div class="flex items-center justify-between">
-            <span class="text-sm text-gray-700">已选择 {{ selectedCards.length }} 张卡片</span>
-            <button 
-              @click="batchDeleteCards" 
-              class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
-            >
-              批量删除
-            </button>
-          </div>
         </div>
 
         <!-- 分页 -->
@@ -458,6 +474,121 @@ console.log('Hello World');
           </div>
         </div>
       </div>
+
+      <!-- 批量移动卡片模态框 -->
+      <div v-if="showBatchMoveModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-xl shadow-lg w-full max-w-md">
+          <div class="p-6">
+            <h3 class="text-xl font-semibold text-gray-800 mb-4">批量移动卡片</h3>
+            <p class="text-gray-600 mb-4">将选中的 {{ selectedCards.length }} 张卡片移动到指定卡包：</p>
+            
+            <form @submit.prevent="confirmBatchMove">
+              <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">目标卡包</label>
+                <select 
+                  v-model="batchMoveTargetDeck" 
+                  required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">请选择目标卡包</option>
+                  <option v-for="deck in decks" :key="deck.id" :value="deck.id">{{ deck.name }}</option>
+                </select>
+              </div>
+              
+              <div class="flex justify-end space-x-3">
+                <button 
+                  type="button" 
+                  @click="closeBatchMoveModal"
+                  class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                >
+                  取消
+                </button>
+                <button 
+                  type="submit"
+                  :disabled="batchMoving"
+                  class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {{ batchMoving ? '移动中...' : '确认移动' }}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- 批量修改标签模态框 -->
+      <div v-if="showBatchTagModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-xl shadow-lg w-full max-w-md">
+          <div class="p-6">
+            <h3 class="text-xl font-semibold text-gray-800 mb-4">批量修改标签</h3>
+            <p class="text-gray-600 mb-4">为选中的 {{ selectedCards.length }} 张卡片设置标签：</p>
+            
+            <form @submit.prevent="confirmBatchTag">
+              <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">操作类型</label>
+                <div class="space-y-2">
+                  <label class="flex items-center">
+                    <input 
+                      type="radio" 
+                      v-model="batchTagAction" 
+                      value="set"
+                      class="mr-2"
+                    />
+                    <span>设置标签（覆盖原有标签）</span>
+                  </label>
+                  <label class="flex items-center">
+                    <input 
+                      type="radio" 
+                      v-model="batchTagAction" 
+                      value="add"
+                      class="mr-2"
+                    />
+                    <span>添加标签（保留原有标签）</span>
+                  </label>
+                  <label class="flex items-center">
+                    <input 
+                      type="radio" 
+                      v-model="batchTagAction" 
+                      value="remove"
+                      class="mr-2"
+                    />
+                    <span>移除标签</span>
+                  </label>
+                </div>
+              </div>
+              
+              <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">选择标签</label>
+                <select 
+                  v-model="batchTagTarget" 
+                  :required="batchTagAction !== 'clear'"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option value="">请选择标签</option>
+                  <option v-for="tag in tags" :key="tag.id" :value="tag.id">{{ tag.name }}</option>
+                </select>
+              </div>
+              
+              <div class="flex justify-end space-x-3">
+                <button 
+                  type="button" 
+                  @click="closeBatchTagModal"
+                  class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                >
+                  取消
+                </button>
+                <button 
+                  type="submit"
+                  :disabled="batchTagging"
+                  class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+                >
+                  {{ batchTagging ? '处理中...' : '确认操作' }}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -500,7 +631,7 @@ console.log('Hello World');
 </style>
 
 <script>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, getCurrentInstance } from 'vue'
 import { ElMessage } from 'element-plus'
 import { marked } from 'marked'
 import hljs from 'highlight.js'
@@ -526,6 +657,15 @@ export default {
     const answerMode = ref('edit')
     const showCardDetailModal = ref(false)
     const selectedCardDetail = ref(null)
+    
+    // 批量操作相关
+    const showBatchMoveModal = ref(false)
+    const showBatchTagModal = ref(false)
+    const batchMoveTargetDeck = ref('')
+    const batchMoving = ref(false)
+    const batchTagAction = ref('set')
+    const batchTagTarget = ref('')
+    const batchTagging = ref(false)
 
     const searchForm = reactive({
       keyword: '',
@@ -838,9 +978,157 @@ export default {
       })
     }
 
+    // 批量移动卡片相关方法
+    const closeBatchMoveModal = () => {
+      showBatchMoveModal.value = false
+      batchMoveTargetDeck.value = ''
+    }
+
+    const confirmBatchMove = async () => {
+      if (!batchMoveTargetDeck.value) {
+        ElMessage.warning('请选择目标卡包')
+        return
+      }
+
+      if (selectedCards.value.length === 0) {
+        ElMessage.warning('请先选择要移动的卡片')
+        return
+      }
+
+      batchMoving.value = true
+      try {
+        // 使用单个更新API进行批量移动
+        const promises = selectedCards.value.map(cardId => {
+          const card = cardList.value.find(c => c.id === cardId)
+          if (!card) return Promise.resolve()
+          
+          // 如果卡片已经在目标卡包中，跳过
+          if (card.deck_id && card.deck_id.toString() === batchMoveTargetDeck.value.toString()) {
+            return Promise.resolve()
+          }
+          
+          // 构建更新数据，只修改卡包ID，保持其他信息不变
+          const updateData = {
+            deck_id: batchMoveTargetDeck.value,
+            tag_id: card.tag_id || null,
+            question: card.question,
+            answer: card.answer
+          }
+          
+          return updateCard(cardId, updateData)
+        })
+        
+        await Promise.all(promises)
+        ElMessage.success(`成功移动 ${selectedCards.value.length} 张卡片`)
+        
+        // 清理状态
+        selectedCards.value = []
+        showBatchMode.value = false
+        closeBatchMoveModal()
+        fetchCards()
+      } catch (error) {
+        console.error('批量移动卡片失败:', error)
+        ElMessage.error('批量移动卡片失败')
+      } finally {
+        batchMoving.value = false
+      }
+    }
+
+    // 批量修改标签相关方法
+    const closeBatchTagModal = () => {
+      showBatchTagModal.value = false
+      batchTagAction.value = 'set'
+      batchTagTarget.value = ''
+    }
+
+    const confirmBatchTag = async () => {
+      if (!batchTagTarget.value && batchTagAction.value !== 'clear') {
+        ElMessage.warning('请选择标签')
+        return
+      }
+
+      if (selectedCards.value.length === 0) {
+        ElMessage.warning('请先选择要修改标签的卡片')
+        return
+      }
+
+      batchTagging.value = true
+      try {
+        // TODO: 这里需要调用批量修改标签的API
+        // 根据不同的操作类型进行处理
+        let actionText = ''
+        switch (batchTagAction.value) {
+          case 'set':
+            actionText = '设置标签'
+            break
+          case 'add':
+            actionText = '添加标签'
+            break
+          case 'remove':
+            actionText = '移除标签'
+            break
+        }
+
+        // 使用单个更新API进行批量标签操作
+        const promises = selectedCards.value.map(cardId => {
+          const card = cardList.value.find(c => c.id === cardId)
+          if (!card) return Promise.resolve()
+          
+          let newTagId = null
+          if (batchTagAction.value === 'set') {
+            newTagId = batchTagTarget.value
+          } else if (batchTagAction.value === 'add') {
+            // 添加标签逻辑（如果卡片没有标签，设置新标签；如果已有标签，保持不变）
+            newTagId = card.tag_id || batchTagTarget.value
+          } else if (batchTagAction.value === 'remove') {
+            // 移除标签逻辑：只有当卡片的标签是目标标签时才移除
+            if (card.tag_id && card.tag_id.toString() === batchTagTarget.value.toString()) {
+              newTagId = null
+            } else {
+              // 如果不是目标标签，保持原标签不变
+              return Promise.resolve()
+            }
+          }
+          
+          const updateData = {
+            deck_id: card.deck_id,
+            tag_id: newTagId,
+            question: card.question,
+            answer: card.answer
+          }
+          
+          return updateCard(cardId, updateData)
+        })
+        
+        await Promise.all(promises)
+        ElMessage.success(`成功为 ${selectedCards.value.length} 张卡片${actionText}`)
+        
+        // 清理状态
+        selectedCards.value = []
+        showBatchMode.value = false
+        closeBatchTagModal()
+        fetchCards()
+      } catch (error) {
+        console.error('批量修改标签失败:', error)
+        ElMessage.error('批量修改标签失败')
+      } finally {
+        batchTagging.value = false
+      }
+    }
+
     onMounted(() => {
       fetchDecks()
       fetchTags()
+      
+      // 检查路由查询参数，如果有tag_id或deck_id参数，自动搜索
+      const route = getCurrentInstance().proxy.$route
+      if (route.query.tag_id) {
+        searchForm.tag_id = route.query.tag_id
+      }
+      if (route.query.deck_id) {
+        searchForm.deck_id = route.query.deck_id
+      }
+      
       fetchCards()
     })
 
@@ -862,6 +1150,13 @@ export default {
       answerMode,
       showCardDetailModal,
       selectedCardDetail,
+      showBatchMoveModal,
+      showBatchTagModal,
+      batchMoveTargetDeck,
+      batchMoving,
+      batchTagAction,
+      batchTagTarget,
+      batchTagging,
       renderMarkdown,
       getDeckName,
       fetchCards,
@@ -880,7 +1175,11 @@ export default {
       viewCardDetail,
       closeCardDetailModal,
       editCardFromDetail,
-      formatDate
+      formatDate,
+      closeBatchMoveModal,
+      confirmBatchMove,
+      closeBatchTagModal,
+      confirmBatchTag
     }
   }
 }

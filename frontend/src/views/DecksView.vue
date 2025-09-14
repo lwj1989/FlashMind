@@ -33,7 +33,19 @@
           <div class="p-6">
             <div class="flex justify-between items-start mb-4">
               <h3 class="text-lg font-semibold text-gray-800">{{ deck.name }}</h3>
-              <span v-if="deck.archived" class="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">已归档</span>
+              <div class="flex space-x-2">
+                <span v-if="deck.archived" class="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">已归档</span>
+                <button @click="editDeck(deck)" class="text-gray-600 hover:text-gray-800" title="编辑卡包">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                  </svg>
+                </button>
+                <button @click="confirmDelete(deck)" class="text-red-600 hover:text-red-800" title="删除卡包">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                  </svg>
+                </button>
+              </div>
             </div>
             
             <div v-if="deck.stats" class="grid grid-cols-2 gap-2 mb-4 text-sm">
@@ -55,22 +67,17 @@
               </div>
             </div>
 
-            <div class="flex justify-between">
-              <router-link :to="`/decks/${deck.id}`" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">
-                查看详情
-              </router-link>
-              <div class="space-x-2">
-                <button @click="editDeck(deck)" class="text-gray-600 hover:text-gray-800">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                  </svg>
-                </button>
-                <button @click="confirmDelete(deck)" class="text-red-600 hover:text-red-800">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                  </svg>
-                </button>
-              </div>
+            <div class="mt-4 space-y-2">
+              <button @click="startDeckStudy(deck)" class="w-full bg-green-600 text-white hover:bg-green-700 py-2 px-4 rounded-lg text-sm font-medium transition-colors">
+                开始学习
+              </button>
+              <button @click="viewDeckCards(deck)" class="w-full bg-indigo-50 text-indigo-700 hover:bg-indigo-100 py-2 px-4 rounded-lg text-sm font-medium transition-colors">
+                查看相关卡片
+              </button>
+            </div>
+
+            <div class="mt-4 text-xs text-gray-500">
+              创建于 {{ formatDate(deck.created_at) }}
             </div>
           </div>
         </div>
@@ -279,6 +286,38 @@ export default {
         console.error('删除卡包失败:', error)
         ElMessage.error('删除卡包失败，请稍后重试')
       }
+    },
+    startDeckStudy(deck) {
+      if (!deck || !deck.id) {
+        ElMessage.error('卡包信息不存在，请刷新页面重试')
+        return
+      }
+      // 跳转到学习页面，并传递卡包ID
+      this.$router.push({
+        path: '/study',
+        query: { deckId: deck.id }
+      })
+    },
+    viewDeckCards(deck) {
+      if (!deck || !deck.id) {
+        ElMessage.error('卡包信息不存在，请刷新页面重试')
+        return
+      }
+      // 跳转到卡片管理页面并搜索该卡包
+      this.$router.push({
+        path: '/cards',
+        query: { deck_id: deck.id }
+      })
+    },
+    formatDate(dateString) {
+      if (!dateString) return ''
+      const date = new Date(dateString)
+      if (isNaN(date.getTime())) return ''
+      return date.toLocaleDateString('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      })
     }
   }
 }

@@ -25,11 +25,6 @@ const router = createRouter({
       component: () => import('../views/ImportExportView.vue')
     },
     {
-      path: '/decks/:id',
-      name: 'deck-detail',
-      component: () => import('../views/DeckDetailView.vue')
-    },
-    {
       path: '/cards/:id',
       name: 'card-detail',
       component: () => import('../views/CardDetailView.vue')

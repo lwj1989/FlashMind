@@ -339,7 +339,11 @@ export default {
         ElMessage.error('标签信息不存在，请刷新页面重试')
         return
       }
-      this.$router.push(`/tags/${tag.id}/cards`)
+      // 跳转到卡片管理页面并搜索该标签
+      this.$router.push({
+        path: '/cards',
+        query: { tag_id: tag.id }
+      })
     },
     startTagStudy(tag) {
       if (!tag || !tag.id) {
