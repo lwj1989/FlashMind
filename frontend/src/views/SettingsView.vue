@@ -194,7 +194,7 @@
 </template>
 
 <script>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getDecks } from '@/api/deck'
 import { getAllTags } from '@/api/tag'
@@ -334,8 +334,27 @@ export default {
       }
     }
 
+    // ESC 键关闭模态框
+    const handleEscapeKey = (event) => {
+      if (event.key === 'Escape') {
+        // 按优先级关闭模态框
+        if (showClearConfirm.value) {
+          showClearConfirm.value = false
+        } else if (showRestoreConfirm.value) {
+          showRestoreConfirm.value = false
+        }
+      }
+    }
+
     onMounted(() => {
+      // 添加键盘事件监听器
+      document.addEventListener('keydown', handleEscapeKey)
       loadStats()
+    })
+
+    onUnmounted(() => {
+      // 移除键盘事件监听器
+      document.removeEventListener('keydown', handleEscapeKey)
     })
 
     return {

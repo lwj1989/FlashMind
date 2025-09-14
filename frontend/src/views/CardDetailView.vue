@@ -171,6 +171,14 @@ export default {
   created() {
     this.fetchCard()
   },
+  mounted() {
+    // 添加键盘事件监听器
+    document.addEventListener('keydown', this.handleEscapeKey)
+  },
+  beforeUnmount() {
+    // 移除键盘事件监听器
+    document.removeEventListener('keydown', this.handleEscapeKey)
+  },
   methods: {
     async fetchCard() {
       try {
@@ -269,6 +277,17 @@ export default {
         month: '2-digit',
         day: '2-digit'
       })
+    },
+    // ESC 键关闭模态框
+    handleEscapeKey(event) {
+      if (event.key === 'Escape') {
+        // 按优先级关闭模态框
+        if (this.showEditModal) {
+          this.showEditModal = false
+        } else if (this.showDeleteModal) {
+          this.showDeleteModal = false
+        }
+      }
     }
   }
 }

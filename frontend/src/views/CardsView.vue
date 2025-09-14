@@ -631,7 +631,7 @@ console.log('Hello World');
 </style>
 
 <script>
-import { ref, reactive, onMounted, getCurrentInstance } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, getCurrentInstance } from 'vue'
 import { ElMessage } from 'element-plus'
 import { marked } from 'marked'
 import hljs from 'highlight.js'
@@ -1116,7 +1116,28 @@ export default {
       }
     }
 
+    // ESC 键关闭模态框
+    const handleEscapeKey = (event) => {
+      if (event.key === 'Escape') {
+        // 按优先级关闭模态框
+        if (showForm.value) {
+          closeForm()
+        } else if (showCardDetailModal.value) {
+          closeCardDetailModal()
+        } else if (showBatchMoveModal.value) {
+          closeBatchMoveModal()
+        } else if (showBatchTagModal.value) {
+          closeBatchTagModal()
+        } else if (deletingCard.value || batchDeletingCards.value.length > 0) {
+          cancelDelete()
+        }
+      }
+    }
+
     onMounted(() => {
+      // 添加键盘事件监听器
+      document.addEventListener('keydown', handleEscapeKey)
+      
       fetchDecks()
       fetchTags()
       
@@ -1130,6 +1151,11 @@ export default {
       }
       
       fetchCards()
+    })
+
+    onUnmounted(() => {
+      // 移除键盘事件监听器
+      document.removeEventListener('keydown', handleEscapeKey)
     })
 
     return {

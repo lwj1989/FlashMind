@@ -243,6 +243,14 @@ export default {
   created() {
     this.fetchAllTags()
   },
+  mounted() {
+    // 添加键盘事件监听器
+    document.addEventListener('keydown', this.handleEscapeKey)
+  },
+  beforeUnmount() {
+    // 移除键盘事件监听器
+    document.removeEventListener('keydown', this.handleEscapeKey)
+  },
   methods: {
 
     async fetchAllTags() {
@@ -354,6 +362,19 @@ export default {
         path: '/study',
         query: { tagId: tag.id }
       })
+    },
+    // ESC 键关闭模态框
+    handleEscapeKey(event) {
+      if (event.key === 'Escape') {
+        // 按优先级关闭模态框
+        if (this.showCreateModal) {
+          this.showCreateModal = false
+        } else if (this.showEditModal) {
+          this.showEditModal = false
+        } else if (this.showDeleteModal) {
+          this.showDeleteModal = false
+        }
+      }
     }
   },
   watch: {

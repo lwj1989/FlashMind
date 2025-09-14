@@ -114,7 +114,7 @@
 </template>
 
 <script>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getDecks } from '@/api/deck'
 import { importDeck, exportDeck } from '@/api/importExport'
@@ -283,8 +283,24 @@ export default {
       return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
     }
 
+    // ESC 键关闭模态框
+    const handleEscapeKey = (event) => {
+      if (event.key === 'Escape') {
+        if (importResult.value) {
+          importResult.value = null
+        }
+      }
+    }
+
     onMounted(() => {
+      // 添加键盘事件监听器
+      document.addEventListener('keydown', handleEscapeKey)
       fetchDecks()
+    })
+
+    onUnmounted(() => {
+      // 移除键盘事件监听器
+      document.removeEventListener('keydown', handleEscapeKey)
     })
 
     return {
