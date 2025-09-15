@@ -165,6 +165,11 @@ func (s *ImportExportService) exportToCSV(data interface{}, deckName string) (st
 
 // ImportDeck 从文件导入卡包
 func (s *ImportExportService) ImportDeck(filePath string) (*models.Deck, error) {
+	return s.ImportDeckWithName(filePath, "")
+}
+
+// ImportDeckWithName 从文件导入卡包并指定卡包名称
+func (s *ImportExportService) ImportDeckWithName(filePath string, deckName string) (*models.Deck, error) {
 	// 检查文件是否存在
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
 		return nil, fmt.Errorf("文件不存在: %s", filePath)
@@ -174,11 +179,11 @@ func (s *ImportExportService) ImportDeck(filePath string) (*models.Deck, error) 
 	ext := strings.ToLower(filepath.Ext(filePath))
 	switch ext {
 	case ".json":
-		return s.importFromJSON(filePath)
+		return s.importFromJSONWithName(filePath, deckName)
 	case ".csv":
-		return s.importFromCSV(filePath)
+		return s.importFromCSVWithName(filePath, deckName)
 	case ".txt":
-		return s.importFromTXT(filePath)
+		return s.importFromTXTWithName(filePath, deckName)
 	default:
 		return nil, fmt.Errorf("不支持的导入格式: %s", ext)
 	}
@@ -186,6 +191,11 @@ func (s *ImportExportService) ImportDeck(filePath string) (*models.Deck, error) 
 
 // importFromJSON 从JSON文件导入
 func (s *ImportExportService) importFromJSON(filePath string) (*models.Deck, error) {
+	return s.importFromJSONWithName(filePath, "")
+}
+
+// importFromJSONWithName 从JSON文件导入并指定卡包名称
+func (s *ImportExportService) importFromJSONWithName(filePath string, deckName string) (*models.Deck, error) {
 	// 读取文件
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -247,9 +257,13 @@ func (s *ImportExportService) importFromJSON(filePath string) (*models.Deck, err
 		}
 	}()
 
-	// 创建卡包
+	// 创建卡包（使用传入的名称，如果没有则使用原始名称）
+	finalDeckName := deckExport.Name
+	if deckName != "" {
+		finalDeckName = deckName
+	}
 	deck := models.Deck{
-		Name:     deckExport.Name,
+		Name:     finalDeckName,
 		Archived: false,
 	}
 	if err := tx.Create(&deck).Error; err != nil {
@@ -302,6 +316,11 @@ func (s *ImportExportService) importFromJSON(filePath string) (*models.Deck, err
 
 // importFromCSV 从CSV文件导入
 func (s *ImportExportService) importFromCSV(filePath string) (*models.Deck, error) {
+	return s.importFromCSVWithName(filePath, "")
+}
+
+// importFromCSVWithName 从CSV文件导入并指定卡包名称
+func (s *ImportExportService) importFromCSVWithName(filePath string, deckName string) (*models.Deck, error) {
 	// 读取文件
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -331,13 +350,16 @@ func (s *ImportExportService) importFromCSV(filePath string) (*models.Deck, erro
 		}
 	}()
 
-	// 创建卡包（使用文件名作为卡包名）
-	baseName := filepath.Base(filePath)
-	deckName := strings.TrimSuffix(baseName, filepath.Ext(baseName))
-	deckName = strings.TrimSuffix(deckName, "_"+getCurrentTimestamp()) // 移除时间戳（如果有）
+	// 创建卡包（使用传入的名称，如果没有则使用文件名）
+	finalDeckName := deckName
+	if finalDeckName == "" {
+		baseName := filepath.Base(filePath)
+		finalDeckName = strings.TrimSuffix(baseName, filepath.Ext(baseName))
+		finalDeckName = strings.TrimSuffix(finalDeckName, "_"+getCurrentTimestamp()) // 移除时间戳（如果有）
+	}
 
 	deck := models.Deck{
-		Name: deckName,
+		Name: finalDeckName,
 	}
 	if err := tx.Create(&deck).Error; err != nil {
 		tx.Rollback()
@@ -494,6 +516,11 @@ func getCurrentTimestamp() string {
 
 // importFromTXT 从TXT文件导入
 func (s *ImportExportService) importFromTXT(filePath string) (*models.Deck, error) {
+	return s.importFromTXTWithName(filePath, "")
+}
+
+// importFromTXTWithName 从TXT文件导入并指定卡包名称
+func (s *ImportExportService) importFromTXTWithName(filePath string, deckName string) (*models.Deck, error) {
 	// 读取文件
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -515,13 +542,16 @@ func (s *ImportExportService) importFromTXT(filePath string) (*models.Deck, erro
 		}
 	}()
 
-	// 创建卡包（使用文件名作为卡包名）
-	baseName := filepath.Base(filePath)
-	deckName := strings.TrimSuffix(baseName, filepath.Ext(baseName))
-	deckName = strings.TrimSuffix(deckName, "_"+getCurrentTimestamp()) // 移除时间戳（如果有）
+	// 创建卡包（使用传入的名称，如果没有则使用文件名）
+	finalDeckName := deckName
+	if finalDeckName == "" {
+		baseName := filepath.Base(filePath)
+		finalDeckName = strings.TrimSuffix(baseName, filepath.Ext(baseName))
+		finalDeckName = strings.TrimSuffix(finalDeckName, "_"+getCurrentTimestamp()) // 移除时间戳（如果有）
+	}
 
 	deck := models.Deck{
-		Name: deckName,
+		Name: finalDeckName,
 	}
 	if err := tx.Create(&deck).Error; err != nil {
 		tx.Rollback()

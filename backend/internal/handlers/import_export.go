@@ -108,8 +108,21 @@ func (h *ImportExportHandler) ImportDeck(c *gin.Context) {
 		return
 	}
 
+	// 获取卡包名称（如果提供的话）
+	deckName := c.PostForm("deck_name")
+	if deckName == "" {
+		// 如果没有提供卡包名称，使用文件名
+		fileName := file.Filename
+		lastDotIndex := strings.LastIndex(fileName, ".")
+		if lastDotIndex > 0 {
+			deckName = fileName[:lastDotIndex]
+		} else {
+			deckName = fileName
+		}
+	}
+
 	// 导入卡包
-	deck, err := h.importExportService.ImportDeck(tempFile.Name())
+	deck, err := h.importExportService.ImportDeckWithName(tempFile.Name(), deckName)
 	if err != nil {
 		// 检查是否是不支持的格式错误
 		if strings.Contains(err.Error(), "不支持的导入格式") {

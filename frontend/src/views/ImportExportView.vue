@@ -9,7 +9,7 @@
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- 导入卡包部分 -->
         <div class="bg-white rounded-xl shadow p-6">
-          <h2 class="text-xl font-semibold text-gray-800 mb-4">导入卡包</h2>
+          <h2 class="text-xl font-semibold text-gray-800 mb-4">批量导入卡包</h2>
           <div class="import-container">
             <div class="upload-area" 
                  :class="{ 'drag-over': isDragOver }"
@@ -20,37 +20,86 @@
                      ref="fileInput" 
                      @change="handleFileChange" 
                      accept=".json,.csv,.txt"
+                     multiple
                      style="display: none">
               
               <div class="upload-content">
                 <div class="upload-icon">📁</div>
-                <p>拖放文件到此处或 <span @click="triggerFileInput" class="upload-link">点击上传</span></p>
-                <p class="upload-hint">支持 JSON、CSV 和 TXT 格式</p>
+                <p>拖放文件到此处或 <span @click="triggerFileInput" class="upload-link">点击选择</span></p>
+                <p class="upload-hint">支持同时选择多个 JSON、CSV 和 TXT 文件</p>
+                <p class="upload-hint text-indigo-600">每个文件将作为独立的卡包导入</p>
               </div>
             </div>
             
-            <div v-if="selectedFile" class="file-info mt-4">
-              <p class="text-gray-700">已选择文件: {{ selectedFile.name }}</p>
-              <p class="text-gray-700">文件大小: {{ formatFileSize(selectedFile.size) }}</p>
+            <!-- 多文件显示 -->
+            <div v-if="selectedFiles.length > 0" class="files-info mt-4">
+              <div class="mb-4">
+                <h3 class="text-lg font-medium text-gray-800 mb-2">已选择 {{ selectedFiles.length }} 个文件</h3>
+                <div class="max-h-48 overflow-y-auto space-y-2">
+                  <div v-for="(file, index) in selectedFiles" :key="index" 
+                       class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div class="flex-1">
+                      <p class="font-medium text-gray-800">{{ getFileName(file.name) }}</p>
+                      <p class="text-sm text-gray-600">{{ file.name }} ({{ formatFileSize(file.size) }})</p>
+                    </div>
+                    <button @click="removeFile(index)" 
+                            class="text-red-500 hover:text-red-700 p-1" 
+                            title="移除文件">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
               
-              <div class="mt-4">
-                <label for="deck-name" class="block text-sm font-medium text-gray-700 mb-1">卡包名称</label>
-                <input 
-                  id="deck-name" 
-                  type="text" 
-                  v-model="deckName" 
-                  placeholder="请输入卡包名称"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  required
-                />
+              <!-- 批量导入进度 -->
+              <div v-if="batchImporting" class="mb-4">
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div class="flex items-center mb-2">
+                    <svg class="animate-spin h-4 w-4 text-blue-600 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span class="text-sm font-medium text-blue-800">
+                      正在导入 {{ currentImportIndex + 1 }} / {{ selectedFiles.length }}：{{ selectedFiles[currentImportIndex]?.name }}
+                    </span>
+                  </div>
+                  <div class="w-full bg-blue-200 rounded-full h-2">
+                    <div class="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+                         :style="{ width: `${((currentImportIndex + 1) / selectedFiles.length) * 100}%` }"></div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- 导入结果 -->
+              <div v-if="batchImportResults.length > 0" class="mb-4">
+                <h4 class="text-md font-medium text-gray-800 mb-2">导入结果</h4>
+                <div class="max-h-32 overflow-y-auto space-y-1">
+                  <div v-for="(result, index) in batchImportResults" :key="index" 
+                       class="flex items-center text-sm"
+                       :class="result.success ? 'text-green-600' : 'text-red-600'">
+                    <svg v-if="result.success" class="h-4 w-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                    </svg>
+                    <svg v-else class="h-4 w-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                    </svg>
+                    <span>{{ result.fileName }}: {{ result.message }}</span>
+                  </div>
+                </div>
               </div>
               
               <div class="flex space-x-3 mt-4">
-                <button @click="uploadFile" :disabled="uploading || !deckName.trim()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors flex-1 disabled:opacity-50">
-                  {{ uploading ? '上传中...' : '导入' }}
+                <button @click="batchUploadFiles" 
+                        :disabled="batchImporting || selectedFiles.length === 0" 
+                        class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors flex-1 disabled:opacity-50">
+                  {{ batchImporting ? '导入中...' : `批量导入 ${selectedFiles.length} 个文件` }}
                 </button>
-                <button @click="clearFile" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 flex-1">
-                  取消
+                <button @click="clearFiles" 
+                        :disabled="batchImporting"
+                        class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 flex-1 disabled:opacity-50">
+                  清空列表
                 </button>
               </div>
             </div>
@@ -136,7 +185,7 @@ export default {
   name: 'ImportExportView',
   setup() {
     const fileInput = ref(null)
-    const selectedFile = ref(null)
+    const selectedFiles = ref([])
     const isDragOver = ref(false)
     const uploading = ref(false)
     const exporting = ref(false)
@@ -145,6 +194,14 @@ export default {
     const decks = ref([])
     const importResult = ref(null)
     const deckName = ref('')
+    
+    // 批量导入相关
+    const batchImporting = ref(false)
+    const currentImportIndex = ref(0)
+    const batchImportResults = ref([])
+    
+    // 保持向后兼容的单文件引用
+    const selectedFile = ref(null)
 
     // 获取卡包列表
     const fetchDecks = async () => {
@@ -169,18 +226,18 @@ export default {
 
     // 处理文件选择
     const handleFileChange = (event) => {
-      const file = event.target.files[0]
-      if (file) {
-        validateAndSetFile(file)
+      const files = Array.from(event.target.files)
+      if (files.length > 0) {
+        validateAndSetFiles(files)
       }
     }
 
     // 处理拖放
     const handleDrop = (event) => {
       isDragOver.value = false
-      const file = event.dataTransfer.files[0]
-      if (file) {
-        validateAndSetFile(file)
+      const files = Array.from(event.dataTransfer.files)
+      if (files.length > 0) {
+        validateAndSetFiles(files)
       }
     }
 
@@ -195,66 +252,145 @@ export default {
     }
 
     // 验证并设置文件
-    const validateAndSetFile = (file) => {
+    const validateAndSetFiles = (files) => {
       const validTypes = ['application/json', 'text/csv', 'text/plain']
       const validExtensions = ['.json', '.csv', '.txt']
       
-      const isValidType = validTypes.includes(file.type) || 
-                         validExtensions.some(ext => file.name.toLowerCase().endsWith(ext))
+      const validFiles = []
+      const invalidFiles = []
       
-      if (!isValidType) {
-        ElMessage.error('请上传 JSON、CSV 或 TXT 格式的文件')
-        return
+      files.forEach(file => {
+        const isValidType = validTypes.includes(file.type) || 
+                           validExtensions.some(ext => file.name.toLowerCase().endsWith(ext))
+        
+        if (isValidType) {
+          validFiles.push(file)
+        } else {
+          invalidFiles.push(file.name)
+        }
+      })
+      
+      if (invalidFiles.length > 0) {
+        ElMessage.error(`以下文件格式不支持: ${invalidFiles.join(', ')}。请上传 JSON、CSV 或 TXT 格式的文件`)
       }
       
-      selectedFile.value = file
-      
-      // 自动填充卡包名称（去掉文件扩展名）
-      const fileName = file.name
-      const lastDotIndex = fileName.lastIndexOf('.')
-      const nameWithoutExtension = lastDotIndex > 0 ? fileName.substring(0, lastDotIndex) : fileName
-      deckName.value = nameWithoutExtension
+      if (validFiles.length > 0) {
+        // 添加到现有文件列表中，避免重复
+        validFiles.forEach(file => {
+          const exists = selectedFiles.value.some(existingFile => 
+            existingFile.name === file.name && existingFile.size === file.size
+          )
+          if (!exists) {
+            selectedFiles.value.push(file)
+          }
+        })
+        
+        ElMessage.success(`成功添加 ${validFiles.length} 个文件`)
+      }
     }
 
-    // 清除选择的文件
-    const clearFile = () => {
-      selectedFile.value = null
-      deckName.value = ''
+    // 获取文件名（去掉扩展名）
+    const getFileName = (fullName) => {
+      const lastDotIndex = fullName.lastIndexOf('.')
+      return lastDotIndex > 0 ? fullName.substring(0, lastDotIndex) : fullName
+    }
+
+    // 移除单个文件
+    const removeFile = (index) => {
+      selectedFiles.value.splice(index, 1)
+    }
+
+    // 清除所有文件
+    const clearFiles = () => {
+      selectedFiles.value = []
+      batchImportResults.value = []
       if (fileInput.value) {
         fileInput.value.value = ''
       }
     }
 
-    // 上传文件
-    const uploadFile = async () => {
-      if (!selectedFile.value || !deckName.value.trim()) return
+    // 兼容性：清除选择的文件
+    const clearFile = () => {
+      clearFiles()
+    }
+
+    // 批量上传文件
+    const batchUploadFiles = async () => {
+      if (selectedFiles.value.length === 0) return
       
-      uploading.value = true
-      try {
-        const formData = new FormData()
-        formData.append('file', selectedFile.value)
-        formData.append('deck_name', deckName.value.trim())
-        const response = await importDeck(formData)
-        console.log('导入响应:', response)
-        let responseData = response.data
-        if (response.data && response.data.code === 'SUCCESS') {
-          responseData = response.data.data
+      batchImporting.value = true
+      currentImportIndex.value = 0
+      batchImportResults.value = []
+      
+      let successCount = 0
+      let failureCount = 0
+      
+      for (let i = 0; i < selectedFiles.value.length; i++) {
+        currentImportIndex.value = i
+        const file = selectedFiles.value[i]
+        const fileName = getFileName(file.name)
+        
+        try {
+          const formData = new FormData()
+          formData.append('file', file)
+          formData.append('deck_name', fileName)
+          
+          const response = await importDeck(formData)
+          console.log('导入响应:', response)
+          
+          let responseData = response.data
+          if (response.data && response.data.code === 'SUCCESS') {
+            responseData = response.data.data
+          }
+          
+          batchImportResults.value.push({
+            fileName: fileName,
+            success: true,
+            message: `成功导入 ${responseData.card_count || 0} 张卡片`,
+            data: responseData
+          })
+          
+          successCount++
+        } catch (error) {
+          console.error(`导入文件 ${file.name} 失败:`, error)
+          
+          batchImportResults.value.push({
+            fileName: fileName,
+            success: false,
+            message: error.response?.data?.message || '导入失败',
+            error: error
+          })
+          
+          failureCount++
         }
-        importResult.value = {
-          success: true,
-          data: responseData
-        }
-        ElMessage.success('导入成功')
-        clearFile()
-      } catch (error) {
-        console.error('导入失败:', error)
-        importResult.value = {
-          success: false,
-          message: error.response?.data?.message || '导入失败'
-        }
-        ElMessage.error('导入失败')
-      } finally {
-        uploading.value = false
+        
+        // 小延迟，避免过快请求
+        await new Promise(resolve => setTimeout(resolve, 300))
+      }
+      
+      batchImporting.value = false
+      
+      // 显示最终结果
+      if (successCount > 0 && failureCount === 0) {
+        ElMessage.success(`批量导入完成！成功导入 ${successCount} 个卡包`)
+      } else if (successCount > 0 && failureCount > 0) {
+        ElMessage.warning(`批量导入完成！成功 ${successCount} 个，失败 ${failureCount} 个`)
+      } else {
+        ElMessage.error(`批量导入失败！${failureCount} 个文件导入失败`)
+      }
+      
+      // 如果全部成功，清空文件列表
+      if (failureCount === 0) {
+        setTimeout(() => {
+          clearFiles()
+        }, 3000)
+      }
+    }
+
+    // 兼容性：单文件上传
+    const uploadFile = async () => {
+      if (selectedFiles.value.length === 1) {
+        await batchUploadFiles()
       }
     }
 
@@ -328,6 +464,7 @@ export default {
     return {
       fileInput,
       selectedFile,
+      selectedFiles,
       isDragOver,
       uploading,
       exporting,
@@ -336,13 +473,22 @@ export default {
       decks,
       importResult,
       deckName,
+      // 批量导入相关
+      batchImporting,
+      currentImportIndex,
+      batchImportResults,
+      // 函数
       triggerFileInput,
       handleFileChange,
       handleDrop,
       handleDragOver,
       handleDragLeave,
       clearFile,
+      clearFiles,
+      removeFile,
+      getFileName,
       uploadFile,
+      batchUploadFiles,
       exportDeck: exportDeckFile,
       closeImportResult,
       formatFileSize
