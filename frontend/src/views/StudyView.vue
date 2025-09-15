@@ -128,7 +128,6 @@
             <div class="flex justify-between items-start">
               <div>
                 <h3 class="text-lg font-medium">{{ currentCard.deck_name }}</h3>
-                <p v-if="currentCard.tag_name" class="text-indigo-200 text-sm"># {{ currentCard.tag_name }}</p>
               </div>
               <button @click="exitStudy" class="text-indigo-200 hover:text-white">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -478,6 +477,37 @@ export default {
       }
     }
 
+    // 代码格式化函数
+    const formatCode = (code, lang) => {
+      // 基本的代码格式化逻辑
+      let formatted = code
+      
+      // 移除首尾空白行
+      formatted = formatted.replace(/^\s*\n+|\n+\s*$/g, '')
+      
+      // 统一缩进 - 找到最小缩进并规范化
+      const lines = formatted.split('\n')
+      const nonEmptyLines = lines.filter(line => line.trim().length > 0)
+      
+      if (nonEmptyLines.length > 0) {
+        // 找到最小缩进
+        const minIndent = Math.min(...nonEmptyLines.map(line => {
+          const match = line.match(/^(\s*)/)
+          return match ? match[1].length : 0
+        }))
+        
+        // 移除多余的缩进
+        const normalizedLines = lines.map(line => {
+          if (line.trim().length === 0) return ''
+          return line.substring(minIndent)
+        })
+        
+        formatted = normalizedLines.join('\n')
+      }
+      
+      return formatted
+    }
+
     // 渲染 Markdown
     const renderMarkdown = (text) => {
       if (!text) return ''
@@ -488,19 +518,53 @@ export default {
         gfm: true,
         sanitize: false,
         highlight: function(code, lang) {
+          // 先格式化代码
+          const formattedCode = formatCode(code, lang)
+          
+          // 尝试语言检测和高亮
           if (lang && hljs.getLanguage(lang)) {
             try {
-              const result = hljs.highlight(code, { language: lang })
-              return result.value
+              const result = hljs.highlight(formattedCode, { language: lang })
+              return `<div class="code-header">
+                        <span class="code-lang">${lang.toUpperCase()}</span>
+                        <button class="copy-btn" onclick="copyCode(this)" title="复制代码">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                            <path d="m5 15-6-6v-6h6l6 6"></path>
+                          </svg>
+                        </button>
+                      </div>
+                      <div class="code-content">${result.value}</div>`
             } catch (err) {
               console.warn('代码高亮失败:', err)
             }
           }
+          
+          // 自动语言检测
           try {
-            const result = hljs.highlightAuto(code)
-            return result.value
+            const result = hljs.highlightAuto(formattedCode)
+            const detectedLang = result.language || 'text'
+            return `<div class="code-header">
+                      <span class="code-lang">${detectedLang.toUpperCase()}</span>
+                      <button class="copy-btn" onclick="copyCode(this)" title="复制代码">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                          <path d="m5 15-6-6v-6h6l6 6"></path>
+                        </svg>
+                      </button>
+                    </div>
+                    <div class="code-content">${result.value}</div>`
           } catch (err) {
-            return code
+            return `<div class="code-header">
+                      <span class="code-lang">TEXT</span>
+                      <button class="copy-btn" onclick="copyCode(this)" title="复制代码">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                          <path d="m5 15-6-6v-6h6l6 6"></path>
+                        </svg>
+                      </button>
+                    </div>
+                    <div class="code-content">${formattedCode}</div>`
           }
         }
       })
@@ -517,6 +581,52 @@ export default {
     onMounted(() => {
       fetchDecks()
       fetchTags()
+      
+      // 添加复制代码功能
+      window.copyCode = function(button) {
+        const codeContent = button.parentElement.nextElementSibling
+        const code = codeContent.textContent || codeContent.innerText
+        
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(code).then(() => {
+            // 更新按钮图标为已复制状态
+            const originalHTML = button.innerHTML
+            button.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                  <polyline points="20,6 9,17 4,12"></polyline>
+                                </svg>`
+            button.style.color = '#22c55e'
+            
+            setTimeout(() => {
+              button.innerHTML = originalHTML
+              button.style.color = ''
+            }, 2000)
+          }).catch(err => {
+            console.error('复制失败:', err)
+          })
+        } else {
+          // 降级方案
+          const textArea = document.createElement('textarea')
+          textArea.value = code
+          document.body.appendChild(textArea)
+          textArea.select()
+          try {
+            document.execCommand('copy')
+            const originalHTML = button.innerHTML
+            button.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                  <polyline points="20,6 9,17 4,12"></polyline>
+                                </svg>`
+            button.style.color = '#22c55e'
+            
+            setTimeout(() => {
+              button.innerHTML = originalHTML
+              button.style.color = ''
+            }, 2000)
+          } catch (err) {
+            console.error('复制失败:', err)
+          }
+          document.body.removeChild(textArea)
+        }
+      }
       
       // 检查查询参数，自动开始学习
       const route = useRoute()
@@ -604,13 +714,50 @@ export default {
   background-color: #1e293b;
   border: 1px solid #334155;
   border-radius: 8px;
-  padding: 16px;
   margin: 16px 0;
-  overflow-x: auto;
+  overflow: hidden;
   font-family: 'Fira Code', 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
   font-size: 14px;
   line-height: 1.5;
   color: #e2e8f0;
+  position: relative;
+}
+
+.markdown-content :deep(pre .code-header) {
+  background-color: #0f172a;
+  padding: 8px 16px;
+  border-bottom: 1px solid #334155;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+}
+
+.markdown-content :deep(pre .code-lang) {
+  color: #64748b;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.markdown-content :deep(pre .copy-btn) {
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.markdown-content :deep(pre .copy-btn:hover) {
+  color: #e2e8f0;
+  background-color: #334155;
+}
+
+.markdown-content :deep(pre .code-content) {
+  padding: 16px;
+  overflow-x: auto;
 }
 
 .markdown-content :deep(code) {
