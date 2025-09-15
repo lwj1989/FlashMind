@@ -753,7 +753,7 @@ import { ElMessage } from 'element-plus'
 import { marked } from 'marked'
 import hljs from 'highlight.js'
 import 'highlight.js/styles/github.css'
-import { searchCards, createCard, updateCard, deleteCard } from '@/api/card'
+import { searchCards, createCard, updateCard, deleteCard as deleteCardAPI } from '@/api/card'
 import { getDecks } from '@/api/deck'
 import { getAllTags } from '@/api/tag'
 
@@ -998,17 +998,33 @@ export default {
     // 提交表单
     const handleSubmit = async () => {
       try {
+        const cardData = {
+          deck_id: parseInt(form.deck_id),
+          question: form.question,
+          answer: form.answer
+        }
+        
+        // 只有当tag_id存在且不为空时才添加
+        if (form.tag_id && form.tag_id !== '') {
+          cardData.tag_id = parseInt(form.tag_id)
+        } else {
+          cardData.tag_id = null
+        }
+        
+        console.log('发送卡片数据:', cardData) // 调试信息
+        
         if (form.id) {
-          await updateCard(form.id, form.deck_id, form.tag_id || null, form.question, form.answer)
+          await updateCard(form.id, cardData)
           ElMessage.success('卡片更新成功')
         } else {
-          await createCard(form.deck_id, form.tag_id || null, form.question, form.answer)
+          await createCard(cardData)
           ElMessage.success('卡片创建成功')
         }
         closeForm()
         fetchCards()
       } catch (error) {
         console.error('保存卡片失败:', error)
+        console.error('错误详情:', error.response?.data) // 更详细的错误信息
         ElMessage.error('保存卡片失败')
       }
     }
@@ -1025,10 +1041,10 @@ export default {
       isDeleting.value = true
       try {
         if (deletingCard.value) {
-          await deleteCard(deletingCard.value.id)
+          await deleteCardAPI(deletingCard.value.id)
           ElMessage.success('卡片删除成功')
         } else {
-          const deletePromises = batchDeletingCards.value.map(id => deleteCard(id))
+          const deletePromises = batchDeletingCards.value.map(id => deleteCardAPI(id))
           await Promise.all(deletePromises)
           ElMessage.success(`成功删除 ${batchDeletingCards.value.length} 张卡片`)
         }

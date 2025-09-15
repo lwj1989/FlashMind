@@ -459,6 +459,15 @@ func (s *ImportExportService) exportToTXT(data interface{}, deckName string) (st
 		}
 	}
 
+	// 计算总卡片数，用于判断是否需要添加分隔符
+	totalCards := 0
+	for _, cards := range tagCards {
+		totalCards += len(cards)
+	}
+	totalCards += len(noTagCards)
+
+	cardIndex := 0
+
 	// 写入有标签的卡片
 	for tagName, cards := range tagCards {
 		_, err := file.WriteString(fmt.Sprintf("# %s\n", tagName))
@@ -466,38 +475,34 @@ func (s *ImportExportService) exportToTXT(data interface{}, deckName string) (st
 			return "", err
 		}
 
-		for i, card := range cards {
+		for _, card := range cards {
 			_, err := file.WriteString(fmt.Sprintf("%s\n---\n%s", card.Question, card.Answer))
 			if err != nil {
 				return "", err
 			}
 
+			cardIndex++
 			// 如果不是最后一张卡片，添加分隔符
-			if i < len(cards)-1 {
+			if cardIndex < totalCards {
 				_, err := file.WriteString("\n===\n")
 				if err != nil {
 					return "", err
 				}
 			}
 		}
-
-		// 标签组之间添加换行
-		_, err = file.WriteString("\n\n")
-		if err != nil {
-			return "", err
-		}
 	}
 
 	// 写入无标签的卡片
 	if len(noTagCards) > 0 {
-		for i, card := range noTagCards {
+		for _, card := range noTagCards {
 			_, err := file.WriteString(fmt.Sprintf("%s\n---\n%s", card.Question, card.Answer))
 			if err != nil {
 				return "", err
 			}
 
+			cardIndex++
 			// 如果不是最后一张卡片，添加分隔符
-			if i < len(noTagCards)-1 {
+			if cardIndex < totalCards {
 				_, err := file.WriteString("\n===\n")
 				if err != nil {
 					return "", err

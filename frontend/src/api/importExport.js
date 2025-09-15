@@ -18,7 +18,8 @@ export function exportDeck(deckId, format) {
     url: `/import-export/decks/${deckId}`,
     method: 'get',
     params: {
-      format
+      format,
+      download: 'true'
     },
     responseType: 'blob'
   })
