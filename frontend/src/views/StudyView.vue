@@ -141,8 +141,22 @@
           <!-- 问题 -->
           <div class="p-6 border-b border-gray-200">
             <h2 class="text-xl font-semibold text-gray-800 mb-4">问题</h2>
-            <div class="prose prose-slate max-w-none">
+            <div class="prose prose-slate max-w-none mb-4">
               <div class="markdown-content" v-html="renderMarkdown(currentCard.question)"></div>
+            </div>
+            
+            <!-- 标签显示在问题下方 -->
+            <div v-if="currentCard.tag_name" class="mt-4">
+              <button 
+                @click="goToTagCards(currentCard.tag_id)" 
+                class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800 hover:bg-indigo-200 transition-colors cursor-pointer"
+                :title="'点击查看标签「' + currentCard.tag_name + '」的所有卡片'"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M17.707 9.293a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-7-7A.997.997 0 012 10V5a3 3 0 013-3h5c.256 0 .512.098.707.293l7 7zM5 6a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+                </svg>
+                {{ currentCard.tag_name }}
+              </button>
             </div>
           </div>
 
@@ -282,7 +296,7 @@
 </style>
 
 <script>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, getCurrentInstance } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { marked } from 'marked'
@@ -454,6 +468,16 @@ export default {
       selectedDeckId.value = ''
     }
 
+    // 跳转到标签卡片页面
+    const goToTagCards = (tagId) => {
+      if (tagId) {
+        getCurrentInstance().proxy.$router.push({
+          path: '/cards',
+          query: { tag_id: tagId }
+        })
+      }
+    }
+
     // 渲染 Markdown
     const renderMarkdown = (text) => {
       if (!text) return ''
@@ -466,13 +490,15 @@ export default {
         highlight: function(code, lang) {
           if (lang && hljs.getLanguage(lang)) {
             try {
-              return hljs.highlight(code, { language: lang }).value
+              const result = hljs.highlight(code, { language: lang })
+              return result.value
             } catch (err) {
               console.warn('代码高亮失败:', err)
             }
           }
           try {
-            return hljs.highlightAuto(code).value
+            const result = hljs.highlightAuto(code)
+            return result.value
           } catch (err) {
             return code
           }
@@ -523,8 +549,112 @@ export default {
       startRandomStudy: startRandomStudySession,
       submitReview: submitReviewResult,
       exitStudy,
+      goToTagCards,
       renderMarkdown
     }
   }
 }
 </script>
+
+<style scoped>
+.markdown-content {
+  color: #374151;
+  line-height: 1.7;
+}
+
+.markdown-content :deep(h1),
+.markdown-content :deep(h2),
+.markdown-content :deep(h3),
+.markdown-content :deep(h4),
+.markdown-content :deep(h5),
+.markdown-content :deep(h6) {
+  font-weight: 600;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.markdown-content :deep(h1) { font-size: 1.75rem; }
+.markdown-content :deep(h2) { font-size: 1.5rem; }
+.markdown-content :deep(h3) { font-size: 1.25rem; }
+.markdown-content :deep(h4) { font-size: 1.125rem; }
+
+.markdown-content :deep(p) {
+  margin-bottom: 1rem;
+}
+
+.markdown-content :deep(ul),
+.markdown-content :deep(ol) {
+  margin-bottom: 1rem;
+  padding-left: 1.5rem;
+}
+
+.markdown-content :deep(li) {
+  margin-bottom: 0.25rem;
+}
+
+.markdown-content :deep(blockquote) {
+  border-left: 4px solid #e5e7eb;
+  padding-left: 1rem;
+  margin: 1rem 0;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.markdown-content :deep(pre) {
+  background-color: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 16px 0;
+  overflow-x: auto;
+  font-family: 'Fira Code', 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #e2e8f0;
+}
+
+.markdown-content :deep(code) {
+  background-color: #f1f5f9;
+  color: #e11d48;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'Fira Code', 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.875em;
+  font-weight: 500;
+}
+
+.markdown-content :deep(pre code) {
+  background-color: transparent;
+  color: inherit;
+  padding: 0;
+  border-radius: 0;
+  font-weight: normal;
+}
+
+.markdown-content :deep(table) {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+}
+
+.markdown-content :deep(th),
+.markdown-content :deep(td) {
+  border: 1px solid #e5e7eb;
+  padding: 0.5rem;
+  text-align: left;
+}
+
+.markdown-content :deep(th) {
+  background-color: #f9fafb;
+  font-weight: 600;
+}
+
+.markdown-content :deep(a) {
+  color: #3b82f6;
+  text-decoration: underline;
+}
+
+.markdown-content :deep(a:hover) {
+  color: #1d4ed8;
+}
+</style>

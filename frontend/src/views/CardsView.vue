@@ -162,9 +162,16 @@
                   <div class="text-sm text-gray-500">{{ getDeckName(card.deck_id) }}</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                  <span v-if="card.tag_name" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                  <button v-if="card.tag_name" 
+                    @click="goToTagCards(card.tag_id)" 
+                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 hover:bg-indigo-200 transition-colors cursor-pointer"
+                    :title="'点击查看标签「' + card.tag_name + '」的所有卡片'"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M17.707 9.293a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-7-7A.997.997 0 012 10V5a3 3 0 013-3h5c.256 0 .512.098.707.293l7 7zM5 6a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+                    </svg>
                     {{ card.tag_name }}
-                  </span>
+                  </button>
                   <span v-else class="text-gray-400 text-sm">无标签</span>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -431,7 +438,21 @@ console.log('Hello World');
               <!-- 问题部分 -->
               <div class="bg-blue-50 rounded-lg p-6">
                 <h4 class="text-lg font-semibold text-blue-800 mb-4">问题</h4>
-                <div class="markdown-content text-blue-900" v-html="renderMarkdown(selectedCardDetail.question)"></div>
+                <div class="markdown-content text-blue-900 mb-4" v-html="renderMarkdown(selectedCardDetail.question)"></div>
+                
+                <!-- 标签显示在问题下方 -->
+                <div v-if="selectedCardDetail.tag_name" class="mt-4">
+                  <button 
+                    @click="goToTagCards(selectedCardDetail.tag_id)" 
+                    class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-200 text-blue-800 hover:bg-blue-300 transition-colors cursor-pointer"
+                    :title="'点击查看标签「' + selectedCardDetail.tag_name + '」的所有卡片'"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M17.707 9.293a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-7-7A.997.997 0 012 10V5a3 3 0 013-3h5c.256 0 .512.098.707.293l7 7zM5 6a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+                    </svg>
+                    {{ selectedCardDetail.tag_name }}
+                  </button>
+                </div>
               </div>
 
               <!-- 答案部分 -->
@@ -443,17 +464,10 @@ console.log('Hello World');
 
             <!-- 卡片信息 -->
             <div class="mt-6 bg-gray-50 rounded-lg p-4">
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                 <div>
                   <span class="text-gray-600">所属卡包：</span>
                   <span class="font-medium">{{ getDeckName(selectedCardDetail.deck_id) }}</span>
-                </div>
-                <div>
-                  <span class="text-gray-600">标签：</span>
-                  <span v-if="selectedCardDetail.tag_name" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
-                    {{ selectedCardDetail.tag_name }}
-                  </span>
-                  <span v-else class="text-gray-400">无标签</span>
                 </div>
                 <div>
                   <span class="text-gray-600">创建时间：</span>
@@ -599,16 +613,55 @@ console.log('Hello World');
   line-height: 1.7;
 }
 
+.markdown-content :deep(h1),
+.markdown-content :deep(h2),
+.markdown-content :deep(h3),
+.markdown-content :deep(h4),
+.markdown-content :deep(h5),
+.markdown-content :deep(h6) {
+  font-weight: 600;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.markdown-content :deep(h1) { font-size: 1.75rem; }
+.markdown-content :deep(h2) { font-size: 1.5rem; }
+.markdown-content :deep(h3) { font-size: 1.25rem; }
+.markdown-content :deep(h4) { font-size: 1.125rem; }
+
+.markdown-content :deep(p) {
+  margin-bottom: 1rem;
+}
+
+.markdown-content :deep(ul),
+.markdown-content :deep(ol) {
+  margin-bottom: 1rem;
+  padding-left: 1.5rem;
+}
+
+.markdown-content :deep(li) {
+  margin-bottom: 0.25rem;
+}
+
+.markdown-content :deep(blockquote) {
+  border-left: 4px solid #e5e7eb;
+  padding-left: 1rem;
+  margin: 1rem 0;
+  color: #6b7280;
+  font-style: italic;
+}
+
 .markdown-content :deep(pre) {
-  background-color: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background-color: #1e293b;
+  border: 1px solid #334155;
   border-radius: 8px;
   padding: 16px;
   margin: 16px 0;
   overflow-x: auto;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-family: 'Fira Code', 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
   font-size: 14px;
   line-height: 1.5;
+  color: #e2e8f0;
 }
 
 .markdown-content :deep(code) {
@@ -616,7 +669,7 @@ console.log('Hello World');
   color: #e11d48;
   padding: 2px 6px;
   border-radius: 4px;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-family: 'Fira Code', 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
   font-size: 0.875em;
   font-weight: 500;
 }
@@ -627,6 +680,33 @@ console.log('Hello World');
   padding: 0;
   border-radius: 0;
   font-weight: normal;
+}
+
+.markdown-content :deep(table) {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+}
+
+.markdown-content :deep(th),
+.markdown-content :deep(td) {
+  border: 1px solid #e5e7eb;
+  padding: 0.5rem;
+  text-align: left;
+}
+
+.markdown-content :deep(th) {
+  background-color: #f9fafb;
+  font-weight: 600;
+}
+
+.markdown-content :deep(a) {
+  color: #3b82f6;
+  text-decoration: underline;
+}
+
+.markdown-content :deep(a:hover) {
+  color: #1d4ed8;
 }
 </style>
 
@@ -707,13 +787,15 @@ export default {
         highlight: function(code, lang) {
           if (lang && hljs.getLanguage(lang)) {
             try {
-              return hljs.highlight(code, { language: lang }).value
+              const result = hljs.highlight(code, { language: lang })
+              return result.value
             } catch (err) {
               console.warn('代码高亮失败:', err)
             }
           }
           try {
-            return hljs.highlightAuto(code).value
+            const result = hljs.highlightAuto(code)
+            return result.value
           } catch (err) {
             return code
           }
@@ -958,6 +1040,19 @@ export default {
       selectedCardDetail.value = null
     }
 
+    // 跳转到标签卡片页面
+    const goToTagCards = (tagId) => {
+      if (tagId) {
+        closeCardDetailModal() // 关闭当前模态框
+        const route = getCurrentInstance().proxy.$route
+        if (route.query.tag_id !== tagId.toString()) {
+          // 更新查询参数并重新获取卡片
+          searchForm.tag_id = tagId
+          fetchCards()
+        }
+      }
+    }
+
     // 从详情页面编辑卡片
     const editCardFromDetail = () => {
       if (selectedCardDetail.value) {
@@ -1200,6 +1295,7 @@ export default {
       getPageNumbers,
       viewCardDetail,
       closeCardDetailModal,
+      goToTagCards,
       editCardFromDetail,
       formatDate,
       closeBatchMoveModal,

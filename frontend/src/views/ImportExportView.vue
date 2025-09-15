@@ -32,8 +32,21 @@
             <div v-if="selectedFile" class="file-info mt-4">
               <p class="text-gray-700">已选择文件: {{ selectedFile.name }}</p>
               <p class="text-gray-700">文件大小: {{ formatFileSize(selectedFile.size) }}</p>
+              
+              <div class="mt-4">
+                <label for="deck-name" class="block text-sm font-medium text-gray-700 mb-1">卡包名称</label>
+                <input 
+                  id="deck-name" 
+                  type="text" 
+                  v-model="deckName" 
+                  placeholder="请输入卡包名称"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  required
+                />
+              </div>
+              
               <div class="flex space-x-3 mt-4">
-                <button @click="uploadFile" :disabled="uploading" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors flex-1">
+                <button @click="uploadFile" :disabled="uploading || !deckName.trim()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors flex-1 disabled:opacity-50">
                   {{ uploading ? '上传中...' : '导入' }}
                 </button>
                 <button @click="clearFile" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 flex-1">
@@ -131,6 +144,7 @@ export default {
     const exportFormat = ref('json')
     const decks = ref([])
     const importResult = ref(null)
+    const deckName = ref('')
 
     // 获取卡包列表
     const fetchDecks = async () => {
@@ -194,11 +208,18 @@ export default {
       }
       
       selectedFile.value = file
+      
+      // 自动填充卡包名称（去掉文件扩展名）
+      const fileName = file.name
+      const lastDotIndex = fileName.lastIndexOf('.')
+      const nameWithoutExtension = lastDotIndex > 0 ? fileName.substring(0, lastDotIndex) : fileName
+      deckName.value = nameWithoutExtension
     }
 
     // 清除选择的文件
     const clearFile = () => {
       selectedFile.value = null
+      deckName.value = ''
       if (fileInput.value) {
         fileInput.value.value = ''
       }
@@ -206,12 +227,13 @@ export default {
 
     // 上传文件
     const uploadFile = async () => {
-      if (!selectedFile.value) return
+      if (!selectedFile.value || !deckName.value.trim()) return
       
       uploading.value = true
       try {
         const formData = new FormData()
         formData.append('file', selectedFile.value)
+        formData.append('deck_name', deckName.value.trim())
         const response = await importDeck(formData)
         console.log('导入响应:', response)
         let responseData = response.data
@@ -313,6 +335,7 @@ export default {
       exportFormat,
       decks,
       importResult,
+      deckName,
       triggerFileInput,
       handleFileChange,
       handleDrop,
