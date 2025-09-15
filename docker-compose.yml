@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  flashmind:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - GIN_MODE=release
+      - SQLITE_DB_PATH=/app/data/flashcard.db
+      - STATIC_PATH=/app/static
+    volumes:
+      - flashmind_data:/app/data
+      - flashmind_temp:/app/temp
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/api/v1/system/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # 可选：添加 Nginx 反向代理
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - flashmind
+    restart: unless-stopped
+    profiles:
+      - production
+
+volumes:
+  flashmind_data:
+    driver: local
+  flashmind_temp:
+    driver: local
+
+networks:
+  default:
+    name: flashmind_network
