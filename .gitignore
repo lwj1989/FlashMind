@@ -1,65 +1,91 @@
-# 依赖包
+# Dependencies
 node_modules/
 /frontend/node_modules/
 
-# 构建输出
+# Build outputs
 /frontend/dist/
 /frontend/build/
 
-# 开发工具
+# Production build
+/backend/bin/
+
+# Development tools
 .vscode/
 .idea/
 *.swp
 *.swo
 
-# 日志文件
+# Log files
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
 
-# 运行时文件
+# Runtime files
 *.pid
 *.sock
 
-# 环境变量
+# Environment variables
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
 
-# 数据库文件
+# Database files
 *.db
 *.sqlite
 *.sqlite3
 
-# 临时文件
+# Temporary files and directories
 /backend/temp/
 /backend/data/
 /frontend/temp/
+temp/
 
-# Go 编译文件
+# Go compiled binaries
 /backend/main
 /backend/server
 /backend/test_server
 /backend/flashcard
+flashcard
 
-# 操作系统文件
+# Operating system files
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
 
-# 测试覆盖率
+# Test coverage
 coverage/
+*.lcov
 
-# 备份文件
+# Backup files
 *.backup
 *.bak
+*.orig
 
-# 导出的数据文件
+# Generated files and exports
 *.csv
 *.json
 *.txt
+
+# Keep specific test data and configuration files
 !test_data/*.json
-!test_cards_new.txt
-!simple_test.txt
+!go.mod
+!go.sum
+!package.json
+!package-lock.json
+!*.config.js
+!*.config.ts
+
+# Keep documentation
+!README.md
+!*.md
+
+# Keep configuration files
+!backend/env.example
