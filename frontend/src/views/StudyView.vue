@@ -1,8 +1,14 @@
 <template>
   <div class="min-h-screen bg-gray-50">
     <div class="max-w-6xl mx-auto px-4 py-12">
+      <!-- 加载状态 -->
+      <div v-if="isAutoStarting" class="text-center py-16">
+        <div class="inline-block animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-indigo-600"></div>
+        <p class="mt-4 text-gray-600 text-lg">正在启动学习会话...</p>
+      </div>
+      
       <!-- 学习选择界面 -->
-      <div v-if="!studySession" class="space-y-8">
+      <div v-else-if="!studySession" class="space-y-8">
         <!-- 学习统计 -->
         <div class="bg-white rounded-xl shadow p-6">
           <h2 class="text-xl font-semibold text-gray-800 mb-6">学习统计</h2>
@@ -314,6 +320,7 @@ export default {
     const tags = ref([])
     const selectedDeckId = ref('')
     const randomLimit = ref(10)
+    const isAutoStarting = ref(false)
     
     // 学习统计数据
     const studyStats = reactive({
@@ -394,9 +401,11 @@ export default {
         }
         studySession.value = session
         showAnswer.value = false
+        return session
       } catch (error) {
         console.error('开始学习失败:', error)
         ElMessage.error('开始学习失败')
+        throw error
       }
     }
 
@@ -411,9 +420,11 @@ export default {
         }
         studySession.value = session
         showAnswer.value = false
+        return session
       } catch (error) {
         console.error('开始学习失败:', error)
         ElMessage.error('开始学习失败')
+        throw error
       }
     }
 
@@ -631,15 +642,25 @@ export default {
       // 检查查询参数，自动开始学习
       const route = useRoute()
       if (route.query.deckId) {
+        isAutoStarting.value = true
         selectedDeckId.value = parseInt(route.query.deckId)
         // 等待数据加载完成后开始学习
-        setTimeout(() => {
-          startDeckStudySession()
-        }, 500)
+        setTimeout(async () => {
+          try {
+            await startDeckStudySession()
+          } finally {
+            isAutoStarting.value = false
+          }
+        }, 300)
       } else if (route.query.tagId) {
-        setTimeout(() => {
-          startTagStudySession(parseInt(route.query.tagId))
-        }, 500)
+        isAutoStarting.value = true
+        setTimeout(async () => {
+          try {
+            await startTagStudySession(parseInt(route.query.tagId))
+          } finally {
+            isAutoStarting.value = false
+          }
+        }, 300)
       }
     })
 
@@ -650,6 +671,7 @@ export default {
       tags,
       selectedDeckId,
       randomLimit,
+      isAutoStarting,
       currentCard,
       studyComplete,
       studyStats,
