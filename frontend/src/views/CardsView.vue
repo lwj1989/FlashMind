@@ -1,6 +1,6 @@
 <template>
-  <div class="min-h-screen bg-gray-50 p-4">
-    <div class="max-w-6xl mx-auto">
+  <div class="min-h-screen bg-gray-50">
+    <div class="max-w-6xl mx-auto px-4 py-12">
       <header class="flex justify-between items-center mb-8">
         <h1 class="text-3xl font-bold text-gray-800">卡片管理</h1>
         <div class="flex items-center space-x-4">
@@ -177,7 +177,7 @@
                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <button 
                     @click="openForm(card)" 
-                    class="text-indigo-600 hover:text-indigo-900 mr-3 p-1"
+                    class="text-indigo-600 hover:text-emerald-900 mr-3 p-1"
                     title="编辑卡片"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">

@@ -1,6 +1,6 @@
 <template>
-  <div class="min-h-screen bg-gray-50 p-4">
-    <div class="max-w-6xl mx-auto">
+  <div class="min-h-screen bg-gray-50">
+    <div class="max-w-6xl mx-auto px-4 py-12">
       <header class="mb-8">
         <div class="flex items-center mb-4">
           <button @click="goBack" class="mr-4 text-gray-600 hover:text-gray-800">

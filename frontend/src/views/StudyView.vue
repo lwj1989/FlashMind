@@ -1,6 +1,6 @@
 <template>
-  <div class="min-h-screen bg-gray-50 p-4">
-    <div class="max-w-6xl mx-auto">
+  <div class="min-h-screen bg-gray-50">
+    <div class="max-w-6xl mx-auto px-4 py-12">
       <!-- 学习选择界面 -->
       <div v-if="!studySession" class="space-y-8">
         <!-- 学习统计 -->

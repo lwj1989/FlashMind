@@ -1,6 +1,6 @@
 <template>
-  <div class="min-h-screen bg-gray-50 p-4">
-    <div class="max-w-6xl mx-auto">
+  <div class="min-h-screen bg-gray-50">
+    <div class="max-w-6xl mx-auto px-4 py-12">
       <header class="mb-8">
         <h1 class="text-3xl font-bold text-gray-800">标签管理</h1>
         <p class="text-gray-600 mt-2">管理所有卡包的标签</p>

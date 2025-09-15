@@ -20,7 +20,7 @@
               <button @click="confirmDelete" class="bg-red-500 text-white hover:bg-red-600 px-4 py-2 rounded-md text-sm font-medium">
                 删除
               </button>
-              <button @click="goBack" class="bg-indigo-800 text-white hover:bg-indigo-900 px-4 py-2 rounded-md text-sm font-medium">
+              <button @click="goBack" class="bg-indigo-800 text-white hover:bg-emerald-900 px-4 py-2 rounded-md text-sm font-medium">
                 返回
               </button>
             </div>
